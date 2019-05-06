@@ -1,0 +1,421 @@
+var noise, env, analyzer;
+var timer = 0
+var vertexVals = [];
+var vertNum = 200;
+var bassAttack;
+var humVals = [];
+var melVals = [];
+
+var attackLevel = 1.0;
+var releaseLevel = 0;
+
+var sliderattack, sliderdecay, slidersustain, sliderrelease;
+
+
+var attackTime = 0.07;
+var decayTime = 0.2;
+var susPercent = 0.2;
+var releaseTime = 0.5;
+
+
+var attack = [];
+var decay = [];
+var sustain = [];
+var release = [];
+
+var input, button, greeting;
+
+
+
+
+function setup() {
+  createCanvas(windowWidth, windowHeight)
+  var index = 0;
+  for (var i = 0; i < windowWidth; i += 100) {
+    vertexVals[index] = random(250, 290);
+    index++;
+  }
+
+  var index1 = 0;
+  for (var p = 0; p < windowWidth; p += 100) {
+    humVals[index1] = random(250, 300);
+    index1++;
+  }
+
+  var index2 = 0;
+  for (var v = 0; v < windowWidth; v += 100) {
+    melVals[index2] = random(250, 300);
+    index2++;
+  }
+     for(var r = 0; r < 50; r++) {
+ attack[r] = random(0,50);
+ decay[r] = random(0,50);
+ sustain[r] = random(0,50);
+ release[r]= random(0,50);
+   }
+
+  button = createButton('random');
+  button.position(19, 19);
+  button.mousePressed(randomFigures);
+
+
+
+//Third Shape Oscilator Setup
+        mel = new p5.Env();
+        mel.setADSR(attackTime, decayTime, susPercent, releaseTime);
+        mel.setRange(attackLevel, releaseLevel);
+  
+        osc = new p5.Oscillator();
+        osc.setType('sine');
+        osc.freq(240);
+        osc.amp(mel);
+        osc.start();
+      
+      
+      
+
+  analyzerMel = new p5.Amplitude();
+  analyzerMel.setInput(mel);
+
+  highHat = createSlider(0, 100, 40);
+  highHat.position(20, 40);
+
+  BPM = createSlider(0, 100, 40);
+  BPM.position(20, 80);
+
+  sliderO = createSlider(0, 100, 40);
+  sliderO.position(20, 160)
+
+
+  sliderA = createSlider(0, 100, 7);
+  sliderA.position(20, 200);
+
+  sliderD = createSlider(0, 100, 20);
+  sliderD.position(20, 240);
+
+  sliderS = createSlider(0, 100, 20);
+  sliderS.position(20, 280);
+
+  sliderR = createSlider(0, 100, 50);
+  sliderR.position(20, 320);
+
+
+
+  leftBass = new bassSetup();
+  leftBass.update();
+  }
+  
+  
+  
+
+  function bassSetup() {
+
+    noise = new p5.Noise();
+    noise.start();
+    noise.amp(0);
+
+    env = new p5.Env();
+    env.setADSR(0.0001, 0.1, 0.002, 0.01);
+    env.setRange(0.1, 0.003);
+
+    analyzer = new p5.Amplitude();
+    analyzer.setInput(noise);
+
+
+    this.update = function() {
+      this.humSetup();
+    }
+
+
+    this.humSetup = function() {
+
+      hum = new p5.Env();
+      hum.setADSR(0.0001, 0.2, 0.2, 0.5);
+      hum.setRange(0.01, 0);
+
+      triOsc = new p5.Oscillator('triangle');
+      triOsc.amp(hum);
+      triOsc.start();
+      triOsc.freq(220);
+
+      analyzerHum = new p5.Amplitude();
+      analyzerHum.setInput(hum);
+
+    }
+
+  }
+
+
+
+function draw() {
+  background(0);
+  noStroke();
+  fill(255)
+
+  var bass = new Bass();
+  bass.update();
+  var synth = new HighHum();
+  synth.update();
+
+  var melody = new Melody();
+  melody.update(analyzerMel.getLevel());
+
+
+  // attackTime = sliderA.value() / 100;
+
+  decayTime = sliderD.value() / 100;
+
+  susPercent = sliderS.value() / 100;
+
+  releaseTime = sliderR.value() / 100;
+  
+  
+    mel.setADSR(attackTime, decayTime, susPercent, releaseTime);
+
+
+
+
+  melBPM = sliderO.value();
+  text(melBPM, 20, 160);
+  if ((timer % melBPM) === 0) {
+    mel.play();
+  }
+
+
+  text('BPM Rate', 120, 160);
+
+  text('Attack Time', 120, 200);
+
+  text('Decay Time', 120, 240);
+
+  text('Sustain Level', 120, 280);
+
+  text('Release Time', 120, 320);
+
+
+    var mellevel = analyzerMel.getLevel();
+if (mellevel>0) {
+  push();
+  fill(255,0,0)
+  pop();
+  
+}
+    var melHeight = map(mellevel, 0, 1, 0, 30);
+      melVals.splice(0, 1);
+      melVals.push(melHeight);
+
+
+
+
+
+}
+
+function random(attack,decay,sustain,release) {
+
+}
+
+function Bass() {
+  bassBPM = BPM.value();
+  text(bassBPM, 120, 80);
+  if ((timer % bassBPM) === 0) {
+    env.play(noise);
+
+  }
+
+  timer++
+
+  this.update = function() {
+    this.bassShape();
+    this.bassNoise();
+    this.bassShape1();
+  }
+
+  this.bassShape = function() {
+    push()
+    beginShape();
+    var index = 0;
+    for (var i = 0; i < windowWidth; i += 100) {
+      var h;
+      if (i < 300 || i > windowWidth - 300) {
+        h = 300;
+      } else {
+        h = -vertexVals[index] + 300;
+      }
+
+      var mapi = map(i, 300, windowWidth - 300, width / 3 - 200, 400)
+
+      vertex(mapi, h);
+      index++;
+    }
+    endShape();
+    pop()
+  }
+
+
+  this.bassShape1 = function() {
+    beginShape();
+    var index = 0;
+    for (var i = 0; i < windowWidth; i += 100) {
+      var h;
+      if (i < 300 || i > windowWidth - 300) {
+        h = 300;
+      } else {
+        h = -vertexVals[index] + 450;
+      }
+
+      var mapi = map(i, 300, windowWidth - 300, width / 3 - 200, 400)
+
+      vertex(mapi, h);
+      index++;
+    }
+    endShape();
+  }
+
+  this.bassNoise = function() {
+    var level = analyzer.getLevel();
+
+    var levelHeight = map(level, 0, .2, 0, height);
+    if (frameCount % 3 === 0) {
+      vertexVals.splice(0, 1);
+      vertexVals.push(levelHeight);
+
+    }
+  }
+
+}
+
+function HighHum() {
+  hhBPM = highHat.value();
+  text(hhBPM, 120, 40);
+  if ((timer % hhBPM) === 0) {
+    hum.play(triOsc, 0, 0.2);
+
+
+
+  }
+
+
+  this.update = function() {
+    this.humShape();
+    this.humShape1();
+    this.humNoise();
+  }
+
+
+  this.humShape = function() {
+    push()
+
+    beginShape();
+    var index1 = 0;
+    for (var p = 0; p < windowWidth; p += 100) {
+      var o;
+      if (p < 300 || p > windowWidth - 300) {
+        o = 300;
+      } else {
+        o = -humVals[index1] + 300;
+      }
+
+      var mapp = map(p, 300, windowWidth - 300, 500, width - 600)
+
+      vertex(mapp, o);
+      index1++;
+    }
+    endShape();
+  }
+
+
+
+
+
+  this.humShape1 = function() {
+    push()
+
+    beginShape();
+    var index1 = 0;
+    for (var p = 0; p < windowWidth; p += 100) {
+      var o;
+      if (p < 300 || p > windowWidth - 300) {
+        o = 300;
+      } else {
+        o = -humVals[index1] + 460;
+      }
+
+      var mapp = map(p, 300, windowWidth - 300, 500, width - 600)
+
+      vertex(mapp, o);
+      index1++;
+    }
+    endShape();
+  }
+
+
+
+  this.humNoise = function() {
+    var humlevel = analyzerHum.getLevel();
+    var humlevelHeight = map(humlevel, 0, .2, 0, 30);
+    if (frameCount % 3 === 0) {
+      humVals.splice(0, 1);
+      humVals.push(humlevelHeight);
+
+    }
+  }
+}
+
+
+
+function Melody() {
+  this.update = function(melHeight) {
+       
+       melVals.splice(0, 1);
+      melVals.push(melHeight);
+    this.melShape();
+    this.melShape1();
+    //this.melNoise();
+
+
+  }
+
+  this.melShape = function() {
+    beginShape();
+    var index2 = 0;
+    for (var v = 0; v < windowWidth; v += 100) {
+      var j;
+      if (v < 300 || v > windowWidth - 300) {
+        j = 300;
+      } else {
+        j = -melVals[index2] + 300;
+      }
+
+      var mapv = map(v, 300, windowWidth - 300, 800, width);
+
+      vertex(mapv, j);
+      index2++;
+    }
+    endShape();
+  }
+
+
+  this.melShape1 = function() {
+    beginShape();
+    var index2 = 0;
+    for (var v = 0; v < windowWidth; v += 100) {
+      var j;
+      if (v < 300 || v > windowWidth - 300) {
+        j = 300;
+      } else {
+        j = -melVals[index2] + 450;
+      }
+
+      var mapv = map(v, 300, windowWidth - 300, 800, width);
+
+      vertex(mapv, j);
+      index2++;
+    }
+    endShape();
+  }
+}
+
+function randomFigures() {
+var rand = floor(random(attack.length));
+attackTime = attack[rand];
+sliderA.value() * 100;}
